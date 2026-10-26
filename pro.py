@@ -2,6 +2,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
 # 1. Load the Dataset
 
 df = pd.read_csv("Customer Churn.csv")
@@ -246,3 +249,46 @@ plt.xticks(
 
 plt.tight_layout()
 plt.show()
+
+
+# 4. Prepare Features and Target
+
+X = df.drop(columns=["Churn"])
+
+y = df["Churn"]
+
+print("\nFeature Columns:")
+print(X.columns.tolist())
+
+print("\nTarget Distribution:")
+print(y.value_counts())
+
+
+# 5. Split the Dataset
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.20,
+    random_state=42,
+    stratify=y
+)
+
+print("\nTraining Records:", X_train.shape[0])
+print("Testing Records:", X_test.shape[0])
+
+
+# 6. Handle Missing Values Without Imputation
+
+X_train = X_train.fillna(X_train.median())
+
+X_test = X_test.fillna(X_train.median())
+
+
+# 7. Feature Scaling
+
+scaler = StandardScaler()
+
+X_train_scaled = scaler.fit_transform(X_train)
+
+X_test_scaled = scaler.transform(X_test)
