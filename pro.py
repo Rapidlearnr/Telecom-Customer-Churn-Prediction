@@ -4,6 +4,22 @@ import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    balanced_accuracy_score,
+    ConfusionMatrixDisplay,
+    classification_report
+)
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+
 
 # 1. Load the Dataset
 
@@ -292,3 +308,323 @@ scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 
 X_test_scaled = scaler.transform(X_test)
+
+
+# 8. Define Five Machine Learning Models
+
+models = {
+
+    "Logistic Regression": LogisticRegression(
+        C=1.0,
+        max_iter=3000,
+        random_state=42
+    ),
+
+    "Decision Tree": DecisionTreeClassifier(
+        max_depth=6,
+        min_samples_split=10,
+        min_samples_leaf=5,
+        random_state=42
+    ),
+
+    "Random Forest": RandomForestClassifier(
+        n_estimators=300,
+        max_depth=10,
+        min_samples_split=5,
+        min_samples_leaf=3,
+        random_state=42
+    ),
+
+    "KNN": KNeighborsClassifier(
+        n_neighbors=7,
+        weights="distance"
+    ),
+
+    "SVM": SVC(
+        C=1.0,
+        kernel="rbf",
+        random_state=42
+    )
+}
+
+
+# 9. Train and Evaluate Models
+
+results = []
+
+predictions_by_model = {}
+
+for name, model in models.items():
+
+    print(f"\nTraining {name}...")
+
+    model.fit(
+        X_train_scaled,
+        y_train
+    )
+
+    predictions = model.predict(
+        X_test_scaled
+    )
+
+    predictions_by_model[name] = predictions
+
+    accuracy = accuracy_score(
+        y_test,
+        predictions
+    )
+
+    precision = precision_score(
+        y_test,
+        predictions,
+        zero_division=0
+    )
+
+    recall = recall_score(
+        y_test,
+        predictions,
+        zero_division=0
+    )
+
+    f1 = f1_score(
+        y_test,
+        predictions,
+        zero_division=0
+    )
+
+    balanced_accuracy = balanced_accuracy_score(
+        y_test,
+        predictions
+    )
+
+    results.append({
+
+        "Model": name,
+        "Accuracy": accuracy,
+        "Precision": precision,
+        "Recall": recall,
+        "F1-score": f1,
+        "Balanced Accuracy": balanced_accuracy
+
+    })
+
+
+# 10. Compare Model Performance
+
+results_df = pd.DataFrame(results)
+
+results_df = results_df.sort_values(
+    by="F1-score",
+    ascending=False
+)
+
+print("\n" + "=" * 100)
+print("MACHINE LEARNING MODEL COMPARISON")
+print("=" * 100)
+
+print(
+    results_df.to_string(
+        index=False,
+        formatters={
+            "Accuracy": "{:.4f}".format,
+            "Precision": "{:.4f}".format,
+            "Recall": "{:.4f}".format,
+            "F1-score": "{:.4f}".format,
+            "Balanced Accuracy": "{:.4f}".format
+        }
+    )
+)
+
+
+# Graph 6: Performance Comparison of Five ML Models
+
+results_df.set_index("Model")[
+    [
+        "Accuracy",
+        "Precision",
+        "Recall",
+        "F1-score",
+        "Balanced Accuracy"
+    ]
+].plot(
+    kind="bar",
+    figsize=(13, 6)
+)
+
+plt.title(
+    "Performance Comparison of Five ML Models",
+    fontsize=16,
+    fontweight="bold",
+    pad=15
+)
+
+plt.xlabel("Machine Learning Algorithm")
+plt.ylabel("Score")
+
+plt.ylim(0, 1)
+
+plt.xticks(
+    rotation=20,
+    ha="right"
+)
+
+plt.legend(loc="lower right")
+plt.grid(axis="y", alpha=0.25)
+
+plt.tight_layout()
+plt.show()
+
+
+# 11. Identify the Best Model Based on F1-score
+
+best_model_name = results_df.iloc[0]["Model"]
+
+best_f1 = results_df.iloc[0]["F1-score"]
+
+best_predictions = predictions_by_model[
+    best_model_name
+]
+
+print("\n" + "=" * 60)
+print("FINAL MODEL SELECTION")
+print("=" * 60)
+
+print("Best Model:", best_model_name)
+
+print(f"Best F1-score: {best_f1:.4f}")
+
+
+# Graph 7: Confusion Matrix — Best Performing Model
+
+ConfusionMatrixDisplay.from_predictions(
+    y_test,
+    best_predictions,
+    labels=[0, 1],
+    display_labels=["No Churn", "Churn"],
+    values_format="d"
+)
+
+plt.title(
+    f"Confusion Matrix — Best Performing Model\n{best_model_name}",
+    fontsize=15,
+    fontweight="bold",
+    pad=15
+)
+
+plt.tight_layout()
+plt.show()
+
+
+# 12. Classification Reports for All Models
+
+for name, predictions in predictions_by_model.items():
+
+    print("\n" + "=" * 60)
+    print(f"CLASSIFICATION REPORT: {name}")
+    print("=" * 60)
+
+    print(
+        classification_report(
+            y_test,
+            predictions,
+            labels=[0, 1],
+            target_names=["No Churn", "Churn"],
+            zero_division=0
+        )
+    )
+
+
+# Graph 8: Precision vs Recall — Five-Model Comparison
+
+plt.figure(figsize=(9, 6))
+
+plt.scatter(
+    results_df["Recall"],
+    results_df["Precision"],
+    s=120
+)
+
+for _, row in results_df.iterrows():
+
+    plt.annotate(
+        row["Model"],
+        (row["Recall"], row["Precision"]),
+        xytext=(6, 5),
+        textcoords="offset points",
+        fontsize=9
+    )
+
+plt.title(
+    "Precision vs Recall: Five-Model Comparison",
+    fontsize=16,
+    fontweight="bold",
+    pad=15
+)
+
+plt.xlabel("Recall (Churners Identified)")
+plt.ylabel("Precision (Correct Churn Predictions)")
+
+plt.xlim(0, 1)
+plt.ylim(0, 1)
+
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+
+# 13. Baseline Accuracy Comparison
+
+baseline_accuracy = (y_test == 0).mean()
+
+print("\n" + "=" * 60)
+print("BASELINE ACCURACY COMPARISON")
+print("=" * 60)
+
+print(
+    f"Majority Class Baseline Accuracy: "
+    f"{baseline_accuracy:.4f}"
+)
+
+print(
+    f"Best Model Accuracy: "
+    f"{results_df.iloc[0]['Accuracy']:.4f}"
+)
+
+
+# 14. Display Best Model Performance
+
+best_result = results_df.iloc[0]
+
+print("\nBEST MODEL PERFORMANCE")
+
+print(f"Model:             {best_model_name}")
+print(f"Accuracy:          {best_result['Accuracy']:.4f}")
+print(f"Precision:         {best_result['Precision']:.4f}")
+print(f"Recall:            {best_result['Recall']:.4f}")
+print(f"F1-score:          {best_result['F1-score']:.4f}")
+print(f"Balanced Accuracy: {best_result['Balanced Accuracy']:.4f}")
+
+
+# 15. Final Conclusion
+
+print("\nPROJECT CONCLUSION")
+
+print(
+    f"Among the five evaluated algorithms, {best_model_name} "
+    f"achieved the highest F1-score on the test dataset."
+)
+
+print(
+    "The models were evaluated using accuracy, precision, "
+    "recall, F1-score and balanced accuracy."
+)
+
+print(
+    "The project analyzes customer usage patterns, complaints, "
+    "subscription details and customer value to predict churn."
+)
+
+print(
+    "The baseline accuracy was also calculated to evaluate "
+    "model performance fairly."
+)
